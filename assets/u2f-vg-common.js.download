@@ -1,0 +1,81 @@
+/*
+ * Common functions used by u2f-vg-enroll.js and u2f-vg-signin.js
+ */
+
+var vgcommon = vgcommon || {}
+
+var URI_VALIDATION_FAILED_CODE = 1000
+var INVALID_BEGIN_ENROLL_RESPONSE_FROM_SERVER_CODE = 1001
+var INVALID_FINISH_ENROLL_RESPONSE_FROM_SERVER_CODE = 1002
+
+vgcommon.getErrorString = function (code, enrolling) {
+  'use strict'
+  switch (code) {
+    case u2f.ErrorCodes.OTHER_ERROR:
+      return 'FAILED_TO_SIGN'
+    case u2f.ErrorCodes.BAD_REQUEST:
+      return 'BAD_REQUEST'
+    case u2f.ErrorCodes.CONFIGURATION_UNSUPPORTED:
+      return 'CONFIGURATION_NOT_SUPPORTED'
+    case u2f.ErrorCodes.DEVICE_INELIGIBLE:
+      if (enrolling) {
+        return 'SECURITY_KEY_ALREADY_REGISTERED'
+      } else {
+        return 'SECURITY_KEY_NOT_REGISTERED'
+      }
+    case u2f.ErrorCodes.TIMEOUT:
+      return 'TIMEOUT'
+    case URI_VALIDATION_FAILED_CODE:
+      return 'URI_VALIDATION_FAILED'
+    case INVALID_BEGIN_ENROLL_RESPONSE_FROM_SERVER_CODE:
+      return 'INVALID_BEGIN_ENROLL_RESPONSE_FROM_SERVER'
+    case INVALID_FINISH_ENROLL_RESPONSE_FROM_SERVER_CODE:
+      return 'INVALID_FINISH_ENROLL_RESPONSE_FROM_SERVER'
+    default:
+      return 'UNKNOWN_ERROR'
+  }
+}
+
+vgcommon.validateURI = function (URI, URItype) {
+  'use strict'
+  var errCount = 0
+
+  // Validate commonAuthRelativeUrl is a relative URL
+  if (URI === undefined) {
+    errCount++
+    console.error('Missing ' + URItype + ' ' + URI)
+  } else {
+    if (URI.length === 0 || URI.trim() === '') {
+      errCount++
+      console.error('Empty ' + URItype + ' ' + URI)
+    } else {
+      if (URI.charAt(0) !== '/') {
+        errCount++
+        console.error(URItype + 'is not a relative URL: ' + URI)
+      }
+    }
+  }
+  return errCount
+}
+
+/**
+ * Utility function to find the sessionId from the beginSignInResponse which
+ * maps to the key pair's keyHandle used by the device during the u2f.sign()
+ * call.
+ *
+ * @param {object}
+ *            beginSignInResponse, the output from CommonAuth BeginSignIn.
+ * @param {string}
+ *            keyHandle
+ * @return {string} sessionId
+ */
+vgcommon.getSessionId = function (beginSignInResponse, keyHandle) {
+  'use strict'
+  var registeredKeys = beginSignInResponse.registeredKeys
+  var size = registeredKeys.length
+  for (var i = 0; i < size; i++) {
+    if (keyHandle === registeredKeys[i].keyHandle) {
+      return registeredKeys[i].sessionId
+    }
+  }
+}
